@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Mining Ch.3 — Study Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1a1a26;
+    --border: #2a2a3d;
+    --accent: #7c6ff7;
+    --accent2: #ff6b6b;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --highlight: #ffd166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(124,111,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,111,247,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  /* Mode selector */
+  .mode-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 28px 0;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    padding: 8px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin-bottom: 24px;
+  }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+  }
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    border-radius: 2px;
+  }
+
+  /* ---- FLASHCARD MODE ---- */
+  .flashcard-area { display: none; }
+  .flashcard-area.active { display: block; }
+
+  .card-container {
+    perspective: 1200px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    min-height: 260px;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+    border-color: var(--accent);
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--card);
+    border-radius: 8px;
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .card-back .card-label { color: var(--accent3); }
+
+  .card-question {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(17px, 2.5vw, 22px);
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .card-answer {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .card-hint {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .card-category {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+    width: fit-content;
+  }
+
+  .cat-cleaning { background: rgba(255,107,107,0.15); color: var(--accent2); border: 1px solid rgba(255,107,107,0.3); }
+  .cat-integration { background: rgba(124,111,247,0.15); color: var(--accent); border: 1px solid rgba(124,111,247,0.3); }
+  .cat-reduction { background: rgba(67,233,123,0.15); color: var(--accent3); border: 1px solid rgba(67,233,123,0.3); }
+  .cat-transformation { background: rgba(255,209,102,0.15); color: var(--highlight); border: 1px solid rgba(255,209,102,0.3); }
+
+  .card-nav {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .nav-btn {
+    padding: 10px 28px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn.primary:hover { opacity: 0.85; }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ---- QUIZ MODE ---- */
+  .quiz-area { display: none; }
+  .quiz-area.active { display: block; }
+
+  .quiz-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px 40px;
+    margin-bottom: 20px;
+  }
+
+  .quiz-q-num {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .quiz-question {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(16px, 2.2vw, 20px);
+    font-weight: 700;
+    line-height: 1.45;
+    margin-bottom: 28px;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quiz-opt {
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    text-align: left;
+    transition: all 0.18s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(124,111,247,0.06); }
+
+  .quiz-opt .opt-letter {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .quiz-opt.correct { background: rgba(67,233,123,0.1); border-color: var(--accent3); }
+  .quiz-opt.correct .opt-letter { background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; }
+  .quiz-opt.wrong { background: rgba(255,107,107,0.1); border-color: var(--accent2); }
+  .quiz-opt.wrong .opt-letter { background: var(--accent2); border-color: var(--accent2); color: #0a0a0f; }
+  .quiz-opt:disabled { cursor: default; }
+
+  .quiz-feedback {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: rgba(67,233,123,0.08); border: 1px solid rgba(67,233,123,0.25); color: var(--accent3); }
+  .quiz-feedback.wrong-fb { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25); color: var(--accent2); }
+
+  .quiz-nav {
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  /* Score screen */
+  .score-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .score-screen.active { display: block; }
+
+  .score-big {
+    font-family: 'Syne', sans-serif;
+    font-size: 88px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 20px 0 10px;
+  }
+
+  .score-label {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+  }
+
+  .score-msg {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .score-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 40px;
+  }
+
+  /* ---- REFERENCE MODE ---- */
+  .reference-area { display: none; }
+  .reference-area.active { display: block; }
+
+  .ref-section {
+    margin-bottom: 28px;
+  }
+
+  .ref-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .ref-header:hover { border-color: var(--accent); }
+
+  .ref-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .ref-toggle {
+    font-size: 18px;
+    color: var(--accent);
+    transition: transform 0.3s;
+  }
+
+  .ref-section.open .ref-toggle { transform: rotate(45deg); }
+
+  .ref-body {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    padding: 20px 24px;
+  }
+
+  .ref-section.open .ref-body { display: block; }
+
+  .ref-item {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ref-item:last-child { border-bottom: none; }
+
+  .ref-term {
+    font-weight: 500;
+    color: var(--highlight);
+    min-width: 180px;
+    font-size: 13px;
+  }
+
+  .ref-def {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    opacity: 0.85;
+  }
+
+  code {
+    background: rgba(124,111,247,0.15);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="tag">Data Mining · Chapter 3</div>
+    <h1>Data <span>Preprocessing</span></h1>
+    <p class="subtitle">Han, Kamber & Pei — 3rd Edition</p>
+  </header>
+
+  <div class="mode-tabs">
+    <button class="mode-btn active" onclick="setMode('flash')">⟁ Flashcards</button>
+    <button class="mode-btn" onclick="setMode('quiz')">◈ Quiz</button>
+    <button class="mode-btn" onclick="setMode('ref')">≡ Reference</button>
+  </div>
+
+  <!-- FLASHCARD MODE -->
+  <div class="flashcard-area active" id="flash-area">
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="flash-counter">Card 1 of 24</span>
+        <span id="flash-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="flash-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card-container" onclick="flipCard()">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face">
+          <div class="card-label">— Question —</div>
+          <div id="card-category" class="card-category cat-cleaning">Data Cleaning</div>
+          <div class="card-question" id="card-q">Click to see the question</div>
+          <div class="card-hint">tap to reveal answer</div>
+        </div>
+        <div class="card-back">
+          <div class="card-label">— Answer —</div>
+          <div class="card-answer" id="card-a"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-nav">
+      <button class="nav-btn" id="prev-btn" onclick="prevCard()" disabled>← Prev</button>
+      <button class="nav-btn primary" onclick="nextCard()" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <!-- QUIZ MODE -->
+  <div class="quiz-area" id="quiz-area">
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="quiz-counter">Question 1 of 15</span>
+        <span id="quiz-score-live">Score: 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="quiz-bar" style="width:0%"></div></div>
+    </div>
+    <div class="quiz-card" id="quiz-card">
+      <div class="quiz-q-num" id="quiz-q-num">Question 1</div>
+      <div class="quiz-question" id="quiz-q-text"></div>
+      <div class="quiz-options" id="quiz-options"></div>
+      <div class="quiz-feedback" id="quiz-feedback"></div>
+    </div>
+    <div class="quiz-nav">
+      <button class="nav-btn primary" id="quiz-next-btn" onclick="nextQuizQ()" style="display:none">Next Question →</button>
+    </div>
+    <div class="score-screen" id="score-screen">
+      <div class="tag">Quiz Complete</div>
+      <div class="score-big" id="score-num">0/15</div>
+      <div class="score-label">Final Score</div>
+      <div class="score-msg" id="score-msg">Great work!</div>
+      <div class="score-sub" id="score-sub"></div>
+      <button class="nav-btn primary" onclick="restartQuiz()">Retake Quiz</button>
+    </div>
+  </div>
+
+  <!-- REFERENCE MODE -->
+  <div class="reference-area" id="ref-area">
+  </div>
+</div>
+
+<script>
+// ===== FLASHCARD DATA =====
+const cards = [
+  { cat: "Data Quality", catClass: "cat-integration", q: "What are the 6 dimensions of data quality?", a: "1. Accuracy — correct vs. wrong\n2. Completeness — all values recorded?\n3. Consistency — no contradictions\n4. Timeliness — up-to-date?\n5. Believability — how trustworthy?\n6. Interpretability — how understandable?" },
+  { cat: "Data Cleaning", catClass: "cat-cleaning", q: "What are the 4 types of 'dirty' data?", a: "1. Incomplete — missing attribute values\n2. Noisy — contains errors or outliers (e.g. Salary = –10)\n3. Inconsistent — contradictions (e.g. Age='42', Birthday='2010')\n4. Intentional — disguised missing data (e.g. Jan 1 as everyone's birthday)" },
+  { cat: "Data Cleaning", catClass: "cat-cleaning", q: "What are the methods for handling missing data?", a: "1. Ignore the tuple (use when class label is missing)\n2. Fill in manually\n3. Fill automatically with:\n   • A global constant (e.g. 'unknown')\n   • The mean (normal dist.) or median (skewed)\n   • The most probable value via Bayesian/decision tree" },
+  { cat: "Data Cleaning", catClass: "cat-cleaning", q: "What is binning and how is it used for noise smoothing?", a: "Sort data → partition into equal-frequency bins → replace values with:\n• Bin means (all values → average of bin)\n• Bin medians (all values → median of bin)\n• Bin boundaries (each value → nearest boundary)\n\nEx: [4,8,15] → bin mean = 9,9,9" },
+  { cat: "Data Cleaning", catClass: "cat-cleaning", q: "Besides binning, what other methods handle noisy data?", a: "• Regression — fit data to a function (linear or multiple)\n• Clustering/Outlier analysis — detect & remove outliers\n• Data discretization — map values to intervals (e.g. 'inexpensive')\n• Concept hierarchies — generalize to higher-level concepts" },
+  { cat: "Data Integration", catClass: "cat-integration", q: "What is the entity identification problem in data integration?", a: "Identifying that records from different databases refer to the same real-world entity.\n\nEx: 'Bill Clinton' in DB1 = 'William Clinton' in DB2\nEx: 'A.cust-id' maps to 'B.cust-#'" },
+  { cat: "Data Integration", catClass: "cat-integration", q: "What causes redundancy in data integration?", a: "• Object identification — same attribute has different names in different DBs\n• Derivable attributes — one attribute can be computed from another (e.g. annual revenue)\n• Denormalized tables — redundancy deliberately added for performance\n\nDetected via: correlation analysis (numeric), Chi-square test (nominal)" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What is the 'curse of dimensionality'?", a: "As the number of dimensions increases:\n• Data becomes increasingly sparse\n• Distance & density measures become less meaningful\n• Possible subspace combinations grow exponentially\n\nSolution: dimensionality reduction (remove irrelevant features)" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What are the main strategies for data reduction?", a: "1. Dimensionality reduction — remove unimportant attributes (feature selection, PCA)\n2. Numerosity reduction — replace data with smaller representations:\n   • Parametric: regression, log-linear models\n   • Non-parametric: histograms, clustering, sampling\n3. Data compression — lossless (string) or lossy (audio/video)\n4. Data cube aggregation" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What are the heuristic methods for attribute subset selection?", a: "• Best single attribute (significance tests, independence assumption)\n• Best step-wise forward selection — pick best single, then best conditioned on that, etc.\n• Step-wise backward elimination — repeatedly remove the worst attribute\n• Best combined selection & elimination\n\n(2ⁿ possible combinations for n attributes)" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What is numerosity reduction and give examples?", a: "Replace original data volume with a smaller representation.\n\nParametric (fit a model):\n• Linear regression: Y = wX + b\n• Multiple regression: Y = b₀ + b₁X₁ + b₂X₂\n• Log-linear models (e.g. logistic regression)\n\nNon-parametric:\n• Histograms, clustering, sampling, data cube aggregation" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What is the difference between SRSWOR and SRSWR?", a: "SRSWOR (Sampling Without Replacement):\n→ Once selected, object is removed from the population\n\nSRSWR (Sampling With Replacement):\n→ Selected object stays in population (can be chosen again)\n\nStratified sampling: partition data first, then sample proportionally from each partition. Good for skewed data." },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is min-max normalization and how do you apply it?", a: "Scales values to a target range [new_min, new_max]:\n\nv' = (v − minA)/(maxA − minA) × (new_max − new_min) + new_min\n\nEx: Income $12K–$98K → [0,1]:\n$73,600 → (73600–12000)/(98000–12000) × 1.0 = 0.716\n\nPreserves original relationships." },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is z-score normalization and when should you use it?", a: "v' = (v − μA) / σA\nwhere μ = mean, σ = standard deviation\n\nEx: μ=54,000, σ=16,000:\n$73,600 → (73600–54000)/16000 = 1.225\n\nUse when: actual min/max are unknown, OR when outliers dominate the min-max normalization." },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is normalization by decimal scaling?", a: "v' = v / 10ʲ\nwhere j is the smallest integer such that Max(|v'|) < 1\n\nEx: Values range –986 to 917 → max absolute = 986\n→ j = 3, divide by 1000\n→ –986 becomes –0.986, 917 becomes 0.917" },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is discretization and what are its types?", a: "Divides the range of a continuous attribute into intervals (bins), replacing values with interval labels.\n\nSupervised vs. Unsupervised\nTop-down (split) vs. Bottom-up (merge)\n\nMethods:\n• Binning (top-down, unsupervised)\n• Histogram analysis (top-down, unsupervised)\n• Clustering (unsupervised, top-down or bottom-up)\n• Decision tree (supervised, top-down)\n• Chi-merge / Chi-square (supervised, bottom-up)" },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is equal-width vs. equal-depth (frequency) partitioning?", a: "Equal-width:\n→ Divides range into N intervals of equal size\n→ Width W = (max – min) / N\n→ Simple, but outliers can dominate\n\nEqual-depth (equal-frequency):\n→ Each interval contains ≈ same number of samples\n→ Better for data with skew; good data scaling" },
+  { cat: "Transformation", catClass: "cat-transformation", q: "What is a concept hierarchy and how is it used?", a: "Organizes attribute values at multiple levels of abstraction.\n\nEx (nominal): street < city < state < country\nEx (numeric): map age values → 'youth', 'adult', 'senior'\n\nUsed in data warehouses to enable drill-down and roll-up operations.\nCan be specified by experts or automatically generated based on number of distinct values." },
+  { cat: "Transformation", catClass: "cat-transformation", q: "How is an automatic concept hierarchy generated?", a: "Based on the number of distinct values per attribute:\n→ Attribute with MOST distinct values goes at LOWEST level\n→ Attribute with FEWEST distinct values goes at HIGHEST level\n\nEx: country (15 distinct) > province_or_state (365) > city (3567) > street (674,339)\n\nException: time (year < month < day doesn't follow count rule)" },
+  { cat: "Data Cleaning", catClass: "cat-cleaning", q: "What is ETL and how does it relate to data preprocessing?", a: "ETL = Extraction / Transformation / Loading\n\n• Data migration tools — allow transformations to be specified\n• ETL tools — let users specify transformations via a GUI\n• Data scrubbing — uses domain knowledge (postal codes, spell-check) for corrections\n• Data auditing — uses correlation/clustering to find outliers & rule violations\n\nNote: cleaning, integration, reduction, and transformation are NOT mutually exclusive." },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What is attribute creation (feature generation)?", a: "Creating new attributes that capture important information more effectively than the original ones.\n\nEx: create 'area' from 'height' × 'width'\n\nBenefits:\n• Can improve accuracy of mining\n• Discovers relationships between attributes\n• Useful in high-dimensional data" },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What is a data cube and how does it help with data reduction?", a: "Multi-dimensional aggregated structure used in data warehouses.\n\n• Base cuboid = lowest level (individual entity data)\n• Apex cuboid = highest level of abstraction\n• Multiple levels of aggregation allow progressive rollup\n\nEx: quarterly sales → aggregate to yearly sales to further reduce data size.\nAggregation queries should use data cube when possible." },
+  { cat: "Data Reduction", catClass: "cat-reduction", q: "What are the two types of data compression?", a: "Lossless compression:\n→ String compression\n→ Original data can be perfectly reconstructed\n→ Only limited manipulation without expansion\n\nLossy compression:\n→ Audio/video compression\n→ Original cannot be perfectly reconstructed\n→ Allows progressive refinement\n→ Small fragments can sometimes be reconstructed independently\n\nDimensionality & numerosity reduction are also forms of data compression." },
+  { cat: "Data Integration", catClass: "cat-integration", q: "What are the main challenges in data integration?", a: "• Schema integration — mapping equivalent attributes (A.cust-id ↔ B.cust-#)\n• Entity identification — 'Bill Clinton' = 'William Clinton'\n• Data value conflicts — same entity, different values (metric vs. imperial units)\n• Redundancy — same data stored differently; detected by correlation/covariance analysis\n• Inconsistency — data not updated uniformly across sources" },
+];
+
+// ===== QUIZ DATA =====
+const quizQuestions = [
+  { q: "Which method fills in missing values using a statistical approach best suited for skewed data?", opts: ["Mean imputation", "Median imputation", "Global constant", "Mode imputation"], ans: 1, exp: "For skewed distributions, the median is preferred over the mean since outliers won't distort it." },
+  { q: "In binning smoothing, what does 'smoothing by bin boundaries' do?", opts: ["Replaces all values with the bin's average", "Replaces each value with the nearest bin boundary (min or max)", "Deletes all values outside boundaries", "Replaces values with the bin median"], ans: 1, exp: "Bin boundaries takes the min and max of each bin; each value is replaced by whichever boundary is closest." },
+  { q: "Min-max normalization maps $73,600 from income range [$12,000–$98,000] to [0, 1]. What is the normalized value?", opts: ["0.512", "0.716", "0.843", "0.630"], ans: 1, exp: "(73600 – 12000) / (98000 – 12000) × 1.0 = 61600/86000 ≈ 0.716" },
+  { q: "Z-score normalization is preferred over min-max normalization when:", opts: ["The data range is known precisely", "Outliers dominate and could distort min-max scaling", "The data follows a uniform distribution", "You need the output in range [0, 1]"], ans: 1, exp: "Z-score doesn't depend on min/max, so outliers won't skew the normalized values." },
+  { q: "What is the 'curse of dimensionality'?", opts: ["Too many rows make queries slow", "High dimensions make data sparse and distance metrics less meaningful", "Curse of having too many duplicate attributes", "Data size exceeds memory capacity"], ans: 1, exp: "As dimensions increase, data becomes sparse and concepts like 'nearest neighbor' lose meaning." },
+  { q: "Step-wise forward attribute selection works by:", opts: ["Removing the worst attribute at each step", "Starting empty and adding the best attribute at each step", "Using PCA to project attributes", "Evaluating all 2ⁿ combinations"], ans: 1, exp: "Forward selection starts with no attributes and greedily adds the best one at each iteration." },
+  { q: "Which numerosity reduction method is parametric (fits a model to the data)?", opts: ["Histograms", "Sampling", "Linear Regression", "Clustering"], ans: 2, exp: "Regression fits a mathematical model (Y = wX + b) to represent the data parametrically." },
+  { q: "Stratified sampling is especially useful when:", opts: ["The data is uniformly distributed", "The data set is very small", "The data is skewed or imbalanced", "All attributes are nominal"], ans: 2, exp: "Stratified sampling partitions the dataset and samples proportionally from each group, maintaining representation of rare classes." },
+  { q: "In automatic concept hierarchy generation, which attribute is placed at the LOWEST level of the hierarchy?", opts: ["The attribute with the fewest distinct values", "The attribute with the most distinct values", "The attribute with most null values", "The attribute defined first in the schema"], ans: 1, exp: "Attributes with more distinct values are more specific/granular → placed lower in the hierarchy." },
+  { q: "What distinguishes equal-width from equal-depth binning?", opts: ["Equal-width uses overlapping bins; equal-depth does not", "Equal-width bins have the same value range; equal-depth bins contain the same number of items", "Equal-depth can only be used with nominal data", "They are identical approaches with different names"], ans: 1, exp: "Equal-width: (max–min)/N per bin. Equal-depth (frequency): same number of data points per bin." },
+  { q: "Which type of data reduction removes irrelevant or redundant features?", opts: ["Numerosity reduction", "Data compression", "Dimensionality reduction", "Data cube aggregation"], ans: 2, exp: "Dimensionality reduction targets the number of attributes/features, removing irrelevant ones." },
+  { q: "The entity identification problem in data integration refers to:", opts: ["Finding the primary key of each table", "Recognizing that different records refer to the same real-world entity", "Matching schema names across databases", "Detecting duplicate rows within a single database"], ans: 1, exp: "E.g., 'Bill Clinton' in one DB equals 'William Clinton' in another — both represent the same person." },
+  { q: "Decimal scaling normalization divides values by 10ʲ, where j is:", opts: ["Always equal to 3", "The number of attributes", "The smallest integer such that the max absolute normalized value < 1", "Determined by the data's standard deviation"], ans: 2, exp: "j is chosen so that after dividing, all values fall in (–1, 1)." },
+  { q: "What makes lossy compression different from lossless compression?", opts: ["Lossy is only for text; lossless is for media", "Lossless perfectly reconstructs original data; lossy does not", "Lossy is always faster than lossless", "Lossless is used for audio; lossy for string data"], ans: 1, exp: "Lossy compression (e.g., video/audio) sacrifices some data fidelity for higher compression ratios." },
+  { q: "Which discretization method is supervised and uses entropy to determine split points?", opts: ["Equal-width binning", "Histogram analysis", "Chi-merge", "Decision tree analysis"], ans: 3, exp: "Decision tree discretization is supervised (uses class labels) and uses entropy to find optimal split points." },
+];
+
+// ===== REFERENCE DATA =====
+const refData = [
+  {
+    title: "Data Quality Dimensions",
+    catClass: "cat-integration",
+    items: [
+      { term: "Accuracy", def: "Correct or wrong; disguised missing data (e.g. Jan 1 as default birthday)" },
+      { term: "Completeness", def: "All required values recorded; nothing missing or unavailable" },
+      { term: "Consistency", def: "No contradictions (e.g. Age=42 but Birthday=2010)" },
+      { term: "Timeliness", def: "Data is sufficiently up to date for the task at hand" },
+      { term: "Believability", def: "How trustworthy the data is perceived to be" },
+      { term: "Interpretability", def: "How easily the data can be understood by users" },
+    ]
+  },
+  {
+    title: "Data Cleaning Methods",
+    catClass: "cat-cleaning",
+    items: [
+      { term: "Ignore tuple", def: "Drop the record; best when class label is missing" },
+      { term: "Global constant", def: "Fill missing values with 'unknown' or a new class" },
+      { term: "Mean / Median fill", def: "Use mean for normal distributions; median for skewed data" },
+      { term: "Probabilistic fill", def: "Most probable value via Bayesian inference or decision tree" },
+      { term: "Binning (smoothing)", def: "Sort → partition into bins → replace with mean, median, or boundaries" },
+      { term: "Regression smoothing", def: "Fit data to a regression function to smooth out noise" },
+      { term: "Outlier analysis", def: "Use clustering to detect and remove extreme values" },
+      { term: "Data scrubbing", def: "Simple domain knowledge (spell-check, postal codes) to fix errors" },
+      { term: "Data auditing", def: "Analyze data with correlation/clustering to find rule violators" },
+      { term: "ETL", def: "Extraction/Transformation/Loading tools with GUI for data transformations" },
+    ]
+  },
+  {
+    title: "Data Integration",
+    catClass: "cat-integration",
+    items: [
+      { term: "Schema integration", def: "Matching equivalent attributes across sources (e.g. cust-id ↔ cust-#)" },
+      { term: "Entity identification", def: "'Bill Clinton' = 'William Clinton'; resolving same-entity aliases" },
+      { term: "Value conflicts", def: "Same entity, different values — often due to different units or scales" },
+      { term: "Redundancy", def: "Same info stored differently; detect via correlation/covariance" },
+      { term: "Denormalization", def: "Redundancy added deliberately for performance (avoids joins)" },
+    ]
+  },
+  {
+    title: "Data Reduction Strategies",
+    catClass: "cat-reduction",
+    items: [
+      { term: "Curse of dimensionality", def: "High dimensions → sparse data, meaningless distances, exponential subspaces" },
+      { term: "Feature subset selection", def: "Remove redundant/irrelevant attributes; 2ⁿ possible combinations" },
+      { term: "Forward selection", def: "Start empty; greedily add best attribute at each step" },
+      { term: "Backward elimination", def: "Start with all; greedily remove worst attribute at each step" },
+      { term: "Feature creation", def: "Construct new attributes (e.g. area = height × width)" },
+      { term: "Linear regression", def: "Y = wX + b; least-squares best fit line" },
+      { term: "Multiple regression", def: "Y = b₀ + b₁X₁ + b₂X₂; multi-variable" },
+      { term: "Log-linear models", def: "Approximate discrete multidimensional probability distributions" },
+      { term: "Histograms", def: "Partition data into buckets/bins; singleton or equal-width" },
+      { term: "Clustering", def: "Store cluster centroids instead of all data points" },
+      { term: "Stratified sampling", def: "Proportional samples from each partition; handles skew" },
+      { term: "Data cube", def: "Multi-level aggregation; base cuboid → apex cuboid" },
+      { term: "Lossless compression", def: "Perfect reconstruction; limited manipulation" },
+      { term: "Lossy compression", def: "Approximate reconstruction; progressive refinement (audio/video)" },
+    ]
+  },
+  {
+    title: "Normalization Methods",
+    catClass: "cat-transformation",
+    items: [
+      { term: "Min-max", def: "v' = (v–min)/(max–min) × (new_max–new_min) + new_min. Preserves relationships." },
+      { term: "Z-score", def: "v' = (v–μ)/σ. Use when min/max unknown or outliers dominate." },
+      { term: "Decimal scaling", def: "v' = v/10ʲ where j = smallest int so max|v'| < 1" },
+    ]
+  },
+  {
+    title: "Discretization & Concept Hierarchies",
+    catClass: "cat-transformation",
+    items: [
+      { term: "Discretization", def: "Divide continuous range into intervals; replace values with labels" },
+      { term: "Equal-width binning", def: "W = (max–min)/N; equal range per bin; sensitive to outliers" },
+      { term: "Equal-depth binning", def: "Same number of samples per bin; better for skewed data" },
+      { term: "Decision tree discret.", def: "Supervised; uses entropy; top-down recursive split" },
+      { term: "Chi-merge", def: "Supervised; χ²-based; bottom-up merge of similar neighboring intervals" },
+      { term: "Concept hierarchy", def: "street < city < state < country; supports drill-down/roll-up" },
+      { term: "Auto hierarchy gen.", def: "Most distinct values → lowest level; fewest → highest level" },
+    ]
+  },
+];
+
+// ===== STATE =====
+let currentCard = 0;
+let cardFlipped = false;
+let currentQuizQ = 0;
+let quizScore = 0;
+let quizAnswered = false;
+let shuffledQuiz = [...quizQuestions].sort(() => Math.random() - 0.5).slice(0, 15);
+
+// ===== MODE SWITCHING =====
+function setMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['flash','quiz','ref'][i] === mode);
+  });
+  document.getElementById('flash-area').classList.toggle('active', mode === 'flash');
+  document.getElementById('quiz-area').classList.toggle('active', mode === 'quiz');
+  document.getElementById('ref-area').classList.toggle('active', mode === 'ref');
+  if (mode === 'flash') renderCard();
+  if (mode === 'quiz') renderQuizQ();
+  if (mode === 'ref') renderRef();
+}
+
+// ===== FLASHCARDS =====
+function renderCard() {
+  const c = cards[currentCard];
+  cardFlipped = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('card-q').textContent = c.q;
+  document.getElementById('card-a').innerHTML = c.a.replace(/\n/g,'<br>');
+  document.getElementById('card-category').textContent = c.cat;
+  document.getElementById('card-category').className = 'card-category ' + c.catClass;
+  document.getElementById('flash-counter').textContent = `Card ${currentCard + 1} of ${cards.length}`;
+  const pct = Math.round(currentCard / (cards.length - 1) * 100);
+  document.getElementById('flash-pct').textContent = pct + '%';
+  document.getElementById('flash-bar').style.width = pct + '%';
+  document.getElementById('prev-btn').disabled = currentCard === 0;
+  document.getElementById('next-btn').textContent = currentCard === cards.length - 1 ? '↺ Restart' : 'Next →';
+}
+
+function flipCard() {
+  cardFlipped = !cardFlipped;
+  document.getElementById('card-inner').classList.toggle('flipped', cardFlipped);
+}
+
+function nextCard() {
+  if (currentCard === cards.length - 1) { currentCard = 0; }
+  else { currentCard++; }
+  renderCard();
+}
+
+function prevCard() {
+  if (currentCard > 0) { currentCard--; renderCard(); }
+}
+
+// ===== QUIZ =====
+function renderQuizQ() {
+  document.getElementById('score-screen').classList.remove('active');
+  document.getElementById('quiz-card').style.display = '';
+  document.querySelector('.quiz-nav').style.display = '';
+  if (currentQuizQ >= shuffledQuiz.length) { showScore(); return; }
+  const q = shuffledQuiz[currentQuizQ];
+  quizAnswered = false;
+  document.getElementById('quiz-q-num').textContent = `Question ${currentQuizQ + 1} of ${shuffledQuiz.length}`;
+  document.getElementById('quiz-q-text').textContent = q.q;
+  document.getElementById('quiz-feedback').className = 'quiz-feedback';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+  document.getElementById('quiz-counter').textContent = `Question ${currentQuizQ + 1} of ${shuffledQuiz.length}`;
+  document.getElementById('quiz-score-live').textContent = `Score: ${quizScore}`;
+  const pct = Math.round(currentQuizQ / shuffledQuiz.length * 100);
+  document.getElementById('quiz-bar').style.width = pct + '%';
+
+  const opts = document.getElementById('quiz-options');
+  opts.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.innerHTML = `<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => answerQuiz(i);
+    opts.appendChild(btn);
+  });
+}
+
+function answerQuiz(chosen) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const q = shuffledQuiz[currentQuizQ];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach(o => o.disabled = true);
+  opts[q.ans].classList.add('correct');
+  const fb = document.getElementById('quiz-feedback');
+  if (chosen === q.ans) {
+    quizScore++;
+    opts[chosen].classList.add('correct');
+    fb.className = 'quiz-feedback correct-fb show';
+    fb.textContent = '✓ Correct! ' + q.exp;
+  } else {
+    opts[chosen].classList.add('wrong');
+    fb.className = 'quiz-feedback wrong-fb show';
+    fb.textContent = '✗ Not quite. ' + q.exp;
+  }
+  document.getElementById('quiz-score-live').textContent = `Score: ${quizScore}`;
+  document.getElementById('quiz-next-btn').style.display = 'inline-block';
+}
+
+function nextQuizQ() {
+  currentQuizQ++;
+  renderQuizQ();
+}
+
+function showScore() {
+  document.getElementById('quiz-card').style.display = 'none';
+  document.querySelector('.quiz-nav').style.display = 'none';
+  const ss = document.getElementById('score-screen');
+  ss.classList.add('active');
+  const pct = Math.round(quizScore / shuffledQuiz.length * 100);
+  document.getElementById('score-num').textContent = `${quizScore}/${shuffledQuiz.length}`;
+  document.getElementById('quiz-bar').style.width = '100%';
+  let msg, sub;
+  if (pct >= 90) { msg = "Excellent!"; sub = "You've mastered Chapter 3 preprocessing concepts."; }
+  else if (pct >= 70) { msg = "Solid Work!"; sub = "Review the concepts you missed and you'll ace it."; }
+  else if (pct >= 50) { msg = "Keep Studying!"; sub = "Focus on normalization, discretization, and data reduction strategies."; }
+  else { msg = "More Review Needed"; sub = "Go back through the flashcards and reference guide before retrying."; }
+  document.getElementById('score-msg').textContent = msg;
+  document.getElementById('score-sub').textContent = sub;
+}
+
+function restartQuiz() {
+  currentQuizQ = 0;
+  quizScore = 0;
+  shuffledQuiz = [...quizQuestions].sort(() => Math.random() - 0.5);
+  renderQuizQ();
+}
+
+// ===== REFERENCE =====
+function renderRef() {
+  const area = document.getElementById('ref-area');
+  if (area.innerHTML.trim()) return; // already rendered
+  area.innerHTML = refData.map((sec, si) => `
+    <div class="ref-section" id="rs${si}">
+      <div class="ref-header" onclick="toggleRef(${si})">
+        <span class="card-category ${sec.catClass}" style="margin:0">${sec.title}</span>
+        <span class="ref-title"></span>
+        <span class="ref-toggle">+</span>
+      </div>
+      <div class="ref-body">
+        ${sec.items.map(it => `
+          <div class="ref-item">
+            <div class="ref-term">${it.term}</div>
+            <div class="ref-def">${it.def}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleRef(i) {
+  document.getElementById('rs'+i).classList.toggle('open');
+}
+
+// Init
+renderCard();
+</script>
+</body>
+</html>
